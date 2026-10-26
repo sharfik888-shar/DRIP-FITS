@@ -292,6 +292,7 @@ function openSet(){audioInit();const o=document.createElement('div');o.className
  "<label>🎵 Музыка <b id='mv'>"+Math.round(S.mus*100)+"%</b></label><input type='range' min='0' max='100' value='"+Math.round(S.mus*100)+"' id='sm'>"+
  "<label>🔊 Звуки <b id='sv'>"+Math.round(S.sfx*100)+"%</b></label><input type='range' min='0' max='100' value='"+Math.round(S.sfx*100)+"' id='ss'>"+
  "<div class='row'><button class='btn' id='vb'>📳 Вибрация: "+(S.vib?'вкл':'выкл')+"</button></div>"+
+ "<div class='row'><button class='btn pk' id='tgb'>📢 Наш Telegram</button></div>"+
  "<div class='row'><button class='btn' id='rs'>🗑 Сбросить прогресс</button></div>"+
  "<div class='row'><button class='btn pri' id='cl'>Готово</button></div></div>";
  document.body.appendChild(o);
@@ -301,6 +302,7 @@ function openSet(){audioInit();const o=document.createElement('div');o.className
  $('ss').oninput=e=>{S.sfx=e.target.value/100;$('sv').textContent=e.target.value+'%';save()};
  $('ss').onchange=()=>sfx('buy');
  $('vb').onclick=e=>{S.vib=S.vib?0:1;e.target.textContent='📳 Вибрация: '+(S.vib?'вкл':'выкл');save()};
+ $('tgb').onclick=()=>{window.open('https://t.me/DRILSFITS','_blank');sfx('buy');toast('Открываем наш Telegram...')};
  let sure=0;$('rs').onclick=e=>{if(!sure){sure=1;e.target.textContent='Точно? Нажми ещё раз';setTimeout(()=>{sure=0;e.target.textContent='🗑 Сбросить прогресс'},4000);return}
   window.noSave=true;try{localStorage.removeItem('drip1')}catch(x){}location.reload()};
  $('cl').onclick=()=>o.remove()}
@@ -346,12 +348,53 @@ function stand(){const E=S.eq||{},n=eqN();
  if(list.length>stdN)h+="<button class='btn' data-sm='1' style='width:100%'>Показать ещё</button>";
  return h}
 
-/* рейтинг */
-const BOTS=[['@drip_king',6200000,820000,5400],['@balenciaga_boy',3100000,150000,3100],['@lil_shark',1900000,540000,2600],['@sasha_gucci',1200000,90000,1800],['@kvartal_228',860000,210000,2200],['@moscow_drill',540000,40000,900],['@nastya.fit',320000,120000,1200],['@vitya_stone',210000,15000,600],['@tyoma_nike',96000,8000,420],['@gosha_cap',41000,3000,240],['@danya_sneaks',18000,1500,130],['@newbie_2026',3000,200,30]];
-function topView(){const pill=(k,t)=>"<button class='btn "+(topM===k?'pri':'')+"' data-tm='"+k+"' style='padding:12px 2px;font-size:12px'>"+t+"</button>",bar="<div class='row' style='margin:6px 0 4px'>"+pill('v','👕 Одежда')+pill('b','💰 Деньги')+pill('x','⭐ Опыт')+pill('a','🏅 Ачивки')+"</div>";
- if(topM==='a')return bar+achView();
- const f={v:1,b:2,x:3}[topM],me=[UN,colVal(),S.r,S.xp||0,1],all=BOTS.concat([me]).sort((a,b)=>b[f]-a[f]),pos=all.indexOf(me)+1;
- return bar+"<h3>Твоё место: #"+pos+"</h3>"+all.map((p,i)=>"<div class='card "+(p[4]?'me':'')+"'><div class='ic'>"+(i<3?['🥇','🥈','🥉'][i]:i+1)+"</div><div class='t'><b>"+p[0]+"</b><small>Ур. "+lvlOf(p[3])+" · "+rankOf(p[1])+"</small></div><b style='color:var(--ac)'>"+fmt(p[f])+(topM==='x'?' XP':' ₽')+"</b></div>").join('')+"<p style='color:var(--mut);font-size:12px;text-align:center'>Остальные игроки пока примеры. Настоящий рейтинг по @username появится с бэкендом.</p>"}
+/* ---------------- РЕАЛЬНЫЙ ТОП ---------------- */
+const SERVER_URL = "https://drip-fits.onrender.com";
+const myUserName = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.username) ? "@" + tg.initDataUnsafe.user.username : "@sharik888";
+
+async function sendScoreToServer() {
+    try {
+        await fetch(SERVER_URL + '/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: myUserName, money: S.r })
+        });
+    } catch (e) {}
+}
+setInterval(sendScoreToServer, 5000); // Отправляем баланс каждые 5 секунд
+
+function topView(){
+    const pill=(k,t)=>"<button class='btn "+(topM===k?'pri':'')+"' data-tm='"+k+"' style='padding:12px 2px;font-size:12px'>"+t+"</button>",bar="<div class='row' style='margin:6px 0 4px'>"+pill('v','👕 Одежда')+pill('b','💰 Деньги')+pill('x','⭐ Опыт')+pill('a','🏅 Ачивки')+"</div>";
+    
+    if(topM==='a') return bar+achView();
+
+    if(topM==='b'){
+        let res = "<h3>Топ по деньгам (Реальные игроки)</h3>";
+        res += "<div id='real-top-list'><p style='text-align:center;color:var(--mut)'>Загрузка сервера... (если долго, подожди 50 сек)</p></div>";
+        
+        fetch(SERVER_URL + '/top')
+            .then(r => r.json())
+            .then(players => {
+                const listDiv = document.getElementById('real-top-list');
+                if (!listDiv) return;
+                let html = '';
+                players.forEach((p, i) => {
+                    const isMe = p.username === myUserName;
+                    html += "<div class='card "+(isMe?'me':'')+"'><div class='ic'>"+(i<3?['🥇','🥈','🥉'][i]:i+1)+"</div><div class='t'><b>"+p.username+(isMe?" (Ты)":"")+"</b></div><b style='color:var(--ac)'>"+fmt(p.money)+" ₽</b></div>";
+                });
+                listDiv.innerHTML = html;
+            })
+            .catch(e => {
+                document.getElementById('real-top-list').innerHTML = "<p style='text-align:center;color:var(--mut)'>Сервер спит, подожди немного и обнови страницу...</p>";
+            });
+        return bar + res;
+    }
+
+    // Боты для вкладок Одежда и Опыт
+    const BOTS=[['@drip_king',6200000,820000,5400],['@balenciaga_boy',3100000,150000,3100],['@lil_shark',1900000,540000,2600],['@sasha_gucci',1200000,90000,1800],['@kvartal_228',860000,210000,2200],['@moscow_drill',540000,40000,900],['@nastya.fit',320000,120000,1200],['@vitya_stone',210000,15000,600],['@tyoma_nike',96000,8000,420],['@gosha_cap',41000,3000,240],['@danya_sneaks',18000,1500,130],['@newbie_2026',3000,200,30]];
+    const f={v:1,x:3}[topM],me=[myUserName,colVal(),S.r,S.xp||0,1],all=BOTS.concat([me]).sort((a,b)=>b[f]-a[f]),pos=all.indexOf(me)+1;
+    return bar+"<h3>Твоё место: #"+pos+"</h3>"+all.map((p,i)=>"<div class='card "+(p[4]?'me':'')+"'><div class='ic'>"+(i<3?['🥇','🥈','🥉'][i]:i+1)+"</div><div class='t'><b>"+p[0]+"</b><small>Ур. "+lvlOf(p[3])+" · "+rankOf(p[1])+"</small></div><b style='color:var(--ac)'>"+fmt(p[f])+(topM==='x'?' XP':' ₽')+"</b></div>").join('');
+}
 
 /* ---------------- HEAD / VIEW ---------------- */
 function head(){checkAch();
@@ -659,4 +702,4 @@ save();view();
 })();
 </script>
 </body>
-</html>по
+</html>
