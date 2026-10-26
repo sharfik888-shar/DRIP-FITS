@@ -357,32 +357,18 @@ async function sendScoreToServer() {
         await fetch(SERVER_URL + '/update', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: myUserName, money: S.r })
+            body: JSON.stringify({ 
+                username: myUserName, 
+                money: S.r,
+                xp: S.xp || 0,
+                colVal: colVal() 
+            })
         });
     } catch (e) {}
 }
-setInterval(sendScoreToServer, 5000); // Отправляем баланс каждые 5 секунд
+setInterval(sendScoreToServer, 5000); // Отправляем данные каждые 5 секунд
 
 function topView(){
-
-
-    // Боты для вкладок Одежда и Опыт
-    const BOTS=[['@drip_king',6200000,820000,5400],['@balenciaga_boy',3100000,150000,3100],['@lil_shark',1900000,540000,2600],['@sasha_gucci',1200000,90000,1800],['@kvartal_228',860000,210000,2200],['@moscow_drill',540000,40000,900],['@nastya.fit',320000,120000,1200],['@vitya_stone',210000,15000,600],['@tyoma_nike',96000,8000,420],['@gosha_cap',41000,3000,240],['@danya_sneaks',18000,1500,130],['@newbie_2026',3000,200,30]];
-    const f={v:1,x:3}[topM],me=[myUserName,colVal(),S.r,S.xp||0,1],all=BOTS.concat([me]).sort((a,b)=>b[f]-a[f]),pos=all.indexOf(me)+1;
-    return bar+"<h3>Твоё место: #"+pos+"</h3>"+all.map((p,i)=>"<div class='card "+(p[4]?'me':'')+"'><div class='ic'>"+(i<3?['🥇','🥈','🥉'][i]:i+1)+"</div><div class='t'><b>"+p[0]+"</b><small>Ур. "+lvlOf(p[3])+" · "+rankOf(p[1])+"</small></div><b style='color:var(--ac)'>"+fmt(p[f])+(topM==='x'?' XP':' ₽')+"</b></div>").join('');
-}
-
-/* ---------------- HEAD / VIEW ---------------- */
-function head(){checkAch();
- $('bal').textContent=fmt(S.r)+' ₽';
- const bl=Math.max(0,Math.ceil(((S.boostUntil||0)-Date.now())/1000));
- $('sub').textContent='+'+ps().toFixed(1)+' ₽/сек · Коллекция: '+fmt(colVal())+' ₽'+(bl?' · ⚡x2 '+bl+'с':'');
- $('rank').textContent='🔥 '+rankOf(colVal())+' · '+UN;
- const lv=lvlOf(S.xp),xa=xpAt(lv),xb=xpAt(lv+1);
- $('lv').innerHTML="💧 Уровень дрипа <b style='color:var(--fg)'>"+lv+"</b> · "+((S.xp||0)-xa)+"/"+(xb-xa)+" XP<div class='xpb'><i style='width:"+(((S.xp||0)-xa)/(xb-xa)*100)+"%'></i></div>";
-}
-
-function view(){
     const pill=(k,t)=>"<button class='btn "+(topM===k?'pri':'')+"' data-tm='"+k+"' style='padding:12px 2px;font-size:12px'>"+t+"</button>",bar="<div class='row' style='margin:6px 0 4px'>"+pill('v','👕 Одежда')+pill('b','💰 Деньги')+pill('x','⭐ Опыт')+pill('a','🏅 Ачивки')+"</div>";
     
     if(topM==='a') return bar+achView();
@@ -419,6 +405,18 @@ function view(){
         return bar + res;
     }
 }
+
+/* ---------------- HEAD / VIEW ---------------- */
+function head(){checkAch();
+ $('bal').textContent=fmt(S.r)+' ₽';
+ const bl=Math.max(0,Math.ceil(((S.boostUntil||0)-Date.now())/1000));
+ $('sub').textContent='+'+ps().toFixed(1)+' ₽/сек · Коллекция: '+fmt(colVal())+' ₽'+(bl?' · ⚡x2 '+bl+'с':'');
+ $('rank').textContent='🔥 '+rankOf(colVal())+' · '+UN;
+ const lv=lvlOf(S.xp),xa=xpAt(lv),xb=xpAt(lv+1);
+ $('lv').innerHTML="💧 Уровень дрипа <b style='color:var(--fg)'>"+lv+"</b> · "+((S.xp||0)-xa)+"/"+(xb-xa)+" XP<div class='xpb'><i style='width:"+(((S.xp||0)-xa)/(xb-xa)*100)+"%'></i></div>";
+}
+
+function view(){
  const m=$('main');let h='';
  if(tab==='tap'){
   h='<div id="tapw"><button id="tap">₽</button><div id="combo"></div>'+
