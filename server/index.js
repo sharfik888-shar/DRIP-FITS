@@ -1,14 +1,34 @@
-// Вставь свою ссылку из Render сюда
-const SERVER_URL = "https://твой-сервер.onrender.com"; 
+const express = require('express');
+const cors = require('cors');
+const app = express();
 
-// Функция сохранения (вызывай её, когда игрок тапает или заходит в игру)
-async function saveProgress() {
-    const username = "@твой_ник"; // Позже тут будет ник из Telegram
-    const money = 12345; // Тут твои текущие деньги в игре
+app.use(cors());
+app.use(express.json());
+
+// Здесь будут храниться игроки
+let players = [];
+
+// 1. Игра отправляет сюда данные
+app.post('/update', (req, res) => {
+    const { username, money } = req.body;
     
-    await fetch(`${SERVER_URL}/update`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username, money: money })
-    });
-}
+    let player = players.find(p => p.username === username);
+    
+    if (player) {
+        player.money = money; 
+    } else {
+        players.push({ username, money });
+    }
+    
+    res.json({ status: "ok" });
+});
+
+// 2. Игра просит список для Топа
+app.get('/top', (req, res) => {
+    let sorted = players.sort((a, b) => b.money - a.money);
+    res.json(sorted.slice(0, 50)); 
+});
+
+// Запуск сервера
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log('Сервер работает!'));
