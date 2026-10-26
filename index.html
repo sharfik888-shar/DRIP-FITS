@@ -364,31 +364,7 @@ async function sendScoreToServer() {
 setInterval(sendScoreToServer, 5000); // Отправляем баланс каждые 5 секунд
 
 function topView(){
-    const pill=(k,t)=>"<button class='btn "+(topM===k?'pri':'')+"' data-tm='"+k+"' style='padding:12px 2px;font-size:12px'>"+t+"</button>",bar="<div class='row' style='margin:6px 0 4px'>"+pill('v','👕 Одежда')+pill('b','💰 Деньги')+pill('x','⭐ Опыт')+pill('a','🏅 Ачивки')+"</div>";
-    
-    if(topM==='a') return bar+achView();
 
-    if(topM==='b'){
-        let res = "<h3>Топ по деньгам (Реальные игроки)</h3>";
-        res += "<div id='real-top-list'><p style='text-align:center;color:var(--mut)'>Загрузка сервера... (если долго, подожди 50 сек)</p></div>";
-        
-        fetch(SERVER_URL + '/top')
-            .then(r => r.json())
-            .then(players => {
-                const listDiv = document.getElementById('real-top-list');
-                if (!listDiv) return;
-                let html = '';
-                players.forEach((p, i) => {
-                    const isMe = p.username === myUserName;
-                    html += "<div class='card "+(isMe?'me':'')+"'><div class='ic'>"+(i<3?['🥇','🥈','🥉'][i]:i+1)+"</div><div class='t'><b>"+p.username+(isMe?" (Ты)":"")+"</b></div><b style='color:var(--ac)'>"+fmt(p.money)+" ₽</b></div>";
-                });
-                listDiv.innerHTML = html;
-            })
-            .catch(e => {
-                document.getElementById('real-top-list').innerHTML = "<p style='text-align:center;color:var(--mut)'>Сервер спит, подожди немного и обнови страницу...</p>";
-            });
-        return bar + res;
-    }
 
     // Боты для вкладок Одежда и Опыт
     const BOTS=[['@drip_king',6200000,820000,5400],['@balenciaga_boy',3100000,150000,3100],['@lil_shark',1900000,540000,2600],['@sasha_gucci',1200000,90000,1800],['@kvartal_228',860000,210000,2200],['@moscow_drill',540000,40000,900],['@nastya.fit',320000,120000,1200],['@vitya_stone',210000,15000,600],['@tyoma_nike',96000,8000,420],['@gosha_cap',41000,3000,240],['@danya_sneaks',18000,1500,130],['@newbie_2026',3000,200,30]];
@@ -407,6 +383,42 @@ function head(){checkAch();
 }
 
 function view(){
+    const pill=(k,t)=>"<button class='btn "+(topM===k?'pri':'')+"' data-tm='"+k+"' style='padding:12px 2px;font-size:12px'>"+t+"</button>",bar="<div class='row' style='margin:6px 0 4px'>"+pill('v','👕 Одежда')+pill('b','💰 Деньги')+pill('x','⭐ Опыт')+pill('a','🏅 Ачивки')+"</div>";
+    
+    if(topM==='a') return bar+achView();
+
+    // Если выбраны Деньги, Одежда или Опыт - грузим с сервера
+    if(topM==='b' || topM==='v' || topM==='x'){
+        let res = "<h3>Топ по "+(topM==='b'?'деньгам':topM==='v'?'одежде':'опыту')+" (Реальные игроки)</h3>";
+        res += "<div id='real-top-list'><p style='text-align:center;color:var(--mut)'>Загрузка сервера... (если долго, подожди 50 сек)</p></div>";
+        
+        fetch(SERVER_URL + '/top')
+            .then(r => r.json())
+            .then(players => {
+                const listDiv = document.getElementById('real-top-list');
+                if (!listDiv) return;
+                
+                // Сортируем игроков в зависимости от выбранной вкладки
+                if (topM === 'b') players.sort((a,b) => b.money - a.money);
+                if (topM === 'v') players.sort((a,b) => b.colVal - a.colVal);
+                if (topM === 'x') players.sort((a,b) => b.xp - a.xp);
+
+                let html = '';
+                players.forEach((p, i) => {
+                    const isMe = p.username === myUserName;
+                    const value = topM==='b' ? p.money : (topM==='v' ? p.colVal : p.xp);
+                    const suffix = topM==='x' ? ' XP' : ' ₽';
+                    
+                    html += "<div class='card "+(isMe?'me':'')+"'><div class='ic'>"+(i<3?['🥇','🥈','🥉'][i]:i+1)+"</div><div class='t'><b>"+p.username+(isMe?" (Ты)":"")+"</b><small>Ур. "+lvlOf(p.xp||0)+" · "+rankOf(p.colVal||0)+"</small></div><b style='color:var(--ac)'>"+fmt(value||0)+suffix+"</b></div>";
+                });
+                listDiv.innerHTML = html;
+            })
+            .catch(e => {
+                document.getElementById('real-top-list').innerHTML = "<p style='text-align:center;color:var(--mut)'>Сервер спит, подожди немного и обнови страницу...</p>";
+            });
+        return bar + res;
+    }
+}
  const m=$('main');let h='';
  if(tab==='tap'){
   h='<div id="tapw"><button id="tap">₽</button><div id="combo"></div>'+
