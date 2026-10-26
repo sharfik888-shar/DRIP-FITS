@@ -5,19 +5,21 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Здесь будут храниться игроки
+// Тут храним игроков: ник, деньги, уровень, коллекция
 let players = [];
 
 // 1. Игра отправляет сюда данные
 app.post('/update', (req, res) => {
-    const { username, money } = req.body;
+    const { username, money, xp, colVal } = req.body;
     
     let player = players.find(p => p.username === username);
     
     if (player) {
         player.money = money; 
+        player.xp = xp;
+        player.colVal = colVal;
     } else {
-        players.push({ username, money });
+        players.push({ username, money, xp, colVal });
     }
     
     res.json({ status: "ok" });
@@ -25,8 +27,8 @@ app.post('/update', (req, res) => {
 
 // 2. Игра просит список для Топа
 app.get('/top', (req, res) => {
-    let sorted = players.sort((a, b) => b.money - a.money);
-    res.json(sorted.slice(0, 50)); 
+    // Возвращаем ВСЕХ игроков. Фронтенд сам их отсортирует как надо.
+    res.json(players); 
 });
 
 // Запуск сервера
